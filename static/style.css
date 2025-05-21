@@ -4,7 +4,7 @@ body {
 }
 
 .chat-container {
-    max-width: 600px;
+    max-width: 80%;
     margin: 60px auto;
     padding: 20px;
     background-color: white;
@@ -13,7 +13,8 @@ body {
 }
 
 .chat-box {
-    height: 400px;
+    height: 700px;
+    max-height: 80%;
     overflow-y: auto;
     background-color: #f1f1f1;
     padding: 15px;

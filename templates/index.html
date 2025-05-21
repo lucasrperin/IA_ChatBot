@@ -26,34 +26,45 @@
         </form>
     </div>
 
-    <!-- Scripts -->
     <script>
-        const form = document.getElementById("chat-form");
-        const input = document.getElementById("user-input");
-        const chatBox = document.getElementById("chat-box");
+  const form = document.getElementById("chat-form");
+  const input = document.getElementById("user-input");
+  const chatBox = document.getElementById("chat-box");
 
-        form.addEventListener("submit", async function(e) {
-            e.preventDefault();
-            const userText = input.value.trim();
-            if (!userText) return;
+  form.addEventListener("submit", async function(e) {
+    e.preventDefault();
+    const userText = input.value.trim();
+    if (!userText) return;
 
-            // Mostra a mensagem do usuário
-            chatBox.innerHTML += `<div class="user-msg"><strong>Você:</strong> ${userText}</div>`;
-            input.value = "";
+    // Mostra a mensagem do usuário
+    chatBox.innerHTML += `<div class="user-msg"><strong>Você:</strong> ${userText}</div>`;
+    input.value = "";
 
-            // Envia a pergunta via fetch para o backend (ajustado para /chat)
-            const res = await fetch("/chat", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ pergunta: userText })
-            });
+    // Envia a pergunta via fetch para o backend
+    const res = await fetch("/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pergunta: userText })
+    });
+    const data = await res.json();
 
-            const data = await res.json();
+    // Mostra a resposta da IA
+    if (Array.isArray(data.response)) {
+      data.response.forEach(item => {
+        chatBox.innerHTML += `
+          <div class="bot-msg">
+            <strong>IA:</strong><br>
+            ${item.titulo ? `<em>${item.titulo}</em><br>` : ""}
+            ${item.conteudo ?? JSON.stringify(item, null, 2)}
+          </div>
+        `;
+      });
+    } else {
+      chatBox.innerHTML += `<div class="bot-msg"><strong>IA:</strong> ${data.response}</div>`;
+    }
+    chatBox.scrollTop = chatBox.scrollHeight;
+  });
+</script>
 
-            // Mostra a resposta da IA
-            chatBox.innerHTML += `<div class="bot-msg"><strong>IA:</strong> ${data.response}</div>`;
-            chatBox.scrollTop = chatBox.scrollHeight;
-        });
-    </script>
 </body>
 </html>
