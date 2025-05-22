@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from config import DB_CONFIG
 
 load_dotenv()  # carrega o .env
-openai.api_key = "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"
+openai.api_key = ""
 
 if not openai.api_key:
     raise RuntimeError("OPENAI_API_KEY não definido – verifique seu .env ou variável de ambiente")

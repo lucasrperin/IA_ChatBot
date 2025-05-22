@@ -5,7 +5,7 @@ import cohere
 from app.db import buscar_erro
 
 # Inicializa o cliente Cohere
-COHERE_API_KEY = os.getenv("COHERE_API_KEY", "")
+COHERE_API_KEY = os.getenv("COHERE_API_KEY", "ymJt3UmoIzKbmCbES3mYLKjBQePF1XEowbcoalr0")
 co = cohere.Client(COHERE_API_KEY)
 
 # Modelo a usar
