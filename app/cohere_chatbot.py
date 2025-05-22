@@ -20,10 +20,13 @@ SYSTEM_INSTRUCTIONS = (
     "Use quebras de linha, parágrafos e listas sempre que fizer sentido para facilitar a leitura."
 )
 
-def gerar_resposta_cohere(pergunta: str) -> str:
-    # 1) Busca no banco por artigos relacionados à pergunta
-    resultado = buscar_erro(pergunta)
-    artigos = resultado.get("resultados", [])
+def gerar_resposta_cohere(pergunta: str, buscar_bdc: bool = False) -> str:
+    # só busca na BDC se o usuário pediu
+    if buscar_bdc:
+        resultado = buscar_erro(pergunta)
+        artigos   = resultado.get("resultados", [])
+    else:
+        artigos = []
 
     # 2) Monta o contexto para o prompt
     if not artigos:

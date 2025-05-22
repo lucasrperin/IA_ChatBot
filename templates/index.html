@@ -18,33 +18,57 @@
             <!-- Mensagens aparecerão aqui -->
         </div>
 
-        <form id="chat-form">
-            <div class="input-group">
-                <input type="text" id="user-input" class="form-control" placeholder="Digite sua pergunta..." required>
-                <button type="submit" class="btn btn-primary">Enviar</button>
+        <form id="chatForm">
+            <input
+                type="text"
+                id="userText"
+                placeholder="Digite sua pergunta…"
+                class="form-control"
+            />
+
+            <!-- AQUI: checkbox para ativar busca na BDC -->
+            <div class="form-check my-2">
+                <input
+                class="form-check-input"
+                type="checkbox"
+                id="buscarBDC"
+                />
+                <label class="form-check-label" for="buscarBDC">
+                Buscar na BDC
+                </label>
             </div>
+
+            <button type="submit" id="sendBtn" class="btn btn-primary">
+                Enviar
+            </button>
         </form>
     </div>
 
       <script>
-        const form = document.getElementById("chat-form");
-        const input = document.getElementById("user-input");
+        const form = document.getElementById("chatForm");
+        const input = document.getElementById("userText");
         const chatBox = document.getElementById("chat-box");
 
         form.addEventListener("submit", async function(e) {
             e.preventDefault();
-            const userText = input.value.trim();
+            const userText  = input.value.trim();
             if (!userText) return;
 
-            // usuário
+            // lê aqui se o usuário marcou “Buscar na BDC”
+            const buscarBdc = document.getElementById("buscarBDC").checked;
+
+            // renderiza a mensagem do usuário...
             chatBox.innerHTML += `<div class="user-msg"><strong>Você:</strong><br>${userText}</div>`;
             input.value = "";
 
-            // chama backend
+            // envia ao back, incluindo o flag buscarBDC
             const res = await fetch("/chat", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ pergunta: userText })
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                pergunta:  userText,
+                buscarBDC: buscarBdc
+            })
             });
             const data = await res.json();
 

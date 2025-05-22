@@ -17,16 +17,20 @@ def index():
 
 @app.route('/chat', methods=['POST'])
 def chat():
-    pergunta = request.json.get('pergunta', '').strip()
+    data       = request.json or {}
+    pergunta   = data.get('pergunta', '').strip()
+    buscar_bdc = data.get('buscarBDC', False)
+
     if not pergunta:
         return jsonify({'response': 'Por favor, envie uma pergunta válida.'}), 400
 
     try:
-        resposta = gerar_resposta_cohere(pergunta)
+        resposta = gerar_resposta_cohere(pergunta, buscar_bdc)
         return jsonify({'response': resposta})
-    except Exception as e:
+    except Exception:
         app.logger.exception("Erro no endpoint /chat")
         return jsonify({'response': 'Desculpe, ocorreu um erro interno.'}), 500
+
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0")
