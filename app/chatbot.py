@@ -1,32 +1,74 @@
+import os
+import logging
 import openai
-from app.db import buscar_contexto
+from app.db import buscar_erro   # ou from db import buscar_erro, conforme seu layout
+from dotenv import load_dotenv
 from config import DB_CONFIG
 
-# Configuração da OpenAI (não esqueça de configurar sua chave API)
-openai.api_key = ''
+load_dotenv()  # carrega o .env
+openai.api_key = "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"
 
-def gerar_resposta(pergunta):
-    # Primeiramente, tentamos buscar um contexto relevante no banco de dados
-    contexto = buscar_contexto(pergunta)
-    
-    if "Nenhuma informação encontrada" in contexto:
-        # Caso não encontre nada no banco de dados, usamos a IA para buscar uma resposta
-        return perguntar_openai(pergunta)
+if not openai.api_key:
+    raise RuntimeError("OPENAI_API_KEY não definido – verifique seu .env ou variável de ambiente")
 
-    # Caso tenha encontrado contexto no banco de dados, retornamos a resposta com isso
-    return contexto
+logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG)
+
+SYSTEM_PROMPT = (
+    "Você é um analista de suporte N1 que presta atendimento "
+    "respeitoso e cordial aos clientes e parceiros. "
+    "Responda de forma clara, objetiva e amigável."
+)
+
+def gerar_resposta(pergunta: str) -> str:
+    resultado = buscar_erro(pergunta)
+    if 'error' in resultado:
+        return "Desculpe, não consegui acessar a base de conhecimento agora."
+
+    artigos = resultado.get('resultados', [])
+    if not artigos:
+        prompt = f"{pergunta}\n\nResponda de forma clara e objetiva."
+    else:
+        blocos = []
+        for a in artigos:
+            blocos.append(
+                f"Título: {a['titulo']}\n"
+                f"Conteúdo: {a['conteudo']}\n"
+            )
+        contexto = "\n---\n".join(blocos)
+        prompt = (
+            "A seguir você tem trechos da base de conhecimento interna.\n\n"
+            f"{contexto}\n\n"
+            "INSTRUÇÕES:\n"
+            "1) Resuma em até 3 frases o que há nesse contexto, sem copiar o texto inteiro.\n"
+            "2) Em seguida, responda à pergunta abaixo de forma objetiva.\n\n"
+            f"Pergunta: {pergunta}"
+        )
+
+    return _chamar_openai(prompt)
 
 
-def perguntar_openai(pergunta):
-    # Faz a chamada para a OpenAI usando o GPT-3/4 ou outro modelo que você tiver
+def _chamar_openai(conteudo: str) -> str:
     try:
-        resposta = openai.Completion.create(
-            model="text-davinci-003",  # Ou outro modelo que você preferir
-            prompt=pergunta,
-            max_tokens=150,
+        resp = openai.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user",   "content": conteudo},
+            ],
+            max_tokens=350,
             temperature=0.7,
         )
-        return resposta.choices[0].text.strip()
+        return resp.choices[0].message.content.strip()
+
     except Exception as e:
-        print(f"[ERRO OPENAI] Não foi possível gerar a resposta: {e}")
-        return "Desculpe, ocorreu um erro ao tentar gerar a resposta."
+        logging.exception("Erro ao chamar OpenAI")
+        err = str(e).lower()
+        if "insufficient_quota" in err:
+            return (
+                "Não foi possível gerar a resposta: cota insuficiente na sua conta OpenAI. "
+                "Verifique seu plano em platform.openai.com."
+            )
+        if "429" in err or "rate limit" in err:
+            return "O serviço está sobrecarregado. Tente novamente em alguns instantes."
+        return f"Desculpe, ocorreu um erro ao gerar a resposta: {e}"

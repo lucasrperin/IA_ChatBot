@@ -26,45 +26,63 @@
         </form>
     </div>
 
-    <script>
-  const form = document.getElementById("chat-form");
-  const input = document.getElementById("user-input");
-  const chatBox = document.getElementById("chat-box");
+      <script>
+        const form = document.getElementById("chat-form");
+        const input = document.getElementById("user-input");
+        const chatBox = document.getElementById("chat-box");
 
-  form.addEventListener("submit", async function(e) {
-    e.preventDefault();
-    const userText = input.value.trim();
-    if (!userText) return;
+        form.addEventListener("submit", async function(e) {
+            e.preventDefault();
+            const userText = input.value.trim();
+            if (!userText) return;
 
-    // Mostra a mensagem do usuário
-    chatBox.innerHTML += `<div class="user-msg"><strong>Você:</strong> ${userText}</div>`;
-    input.value = "";
+            // usuário
+            chatBox.innerHTML += `<div class="user-msg"><strong>Você:</strong><br>${userText}</div>`;
+            input.value = "";
 
-    // Envia a pergunta via fetch para o backend
-    const res = await fetch("/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ pergunta: userText })
-    });
-    const data = await res.json();
+            // chama backend
+            const res = await fetch("/chat", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ pergunta: userText })
+            });
+            const data = await res.json();
 
-    // Mostra a resposta da IA
-    if (Array.isArray(data.response)) {
-      data.response.forEach(item => {
-        chatBox.innerHTML += `
-          <div class="bot-msg">
-            <strong>IA:</strong><br>
-            ${item.titulo ? `<em>${item.titulo}</em><br>` : ""}
-            ${item.conteudo ?? JSON.stringify(item, null, 2)}
-          </div>
-        `;
-      });
-    } else {
-      chatBox.innerHTML += `<div class="bot-msg"><strong>IA:</strong> ${data.response}</div>`;
-    }
-    chatBox.scrollTop = chatBox.scrollHeight;
-  });
-</script>
+            // IA
+            if (Array.isArray(data.response)) {
+                data.response.forEach(item => {
+                    let html = `<div class="bot-msg"><strong>IA:</strong><br>`;
+
+                    if (item.imagem) {
+                        html += `<img src="${item.imagem}" alt="imagem IA" style="max-width:100%;margin:0.5rem 0;">`;
+                    }
+                    if (item.titulo) {
+                        html += `<div><em>${item.titulo}</em></div>`;
+                    }
+                    if (item.conteudo) {
+                        html += `
+                          <div style="white-space: pre-wrap; margin-top:0.5rem;">
+                            ${item.conteudo}
+                          </div>
+                        `;
+                    }
+                    html += `</div>`;
+                    chatBox.innerHTML += html;
+                });
+            } else {
+                chatBox.innerHTML += `
+                  <div class="bot-msg">
+                    <strong>IA:</strong>
+                    <div style="white-space: pre-wrap; margin-top:0.5rem;">
+                      ${data.response}
+                    </div>
+                  </div>
+                `;
+            }
+
+            chatBox.scrollTop = chatBox.scrollHeight;
+        });
+    </script>
 
 </body>
 </html>

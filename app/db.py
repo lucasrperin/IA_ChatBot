@@ -3,59 +3,59 @@ from psycopg2 import sql
 import logging
 from config import DB_CONFIG
 
-# Configuração de logging
 logging.basicConfig(level=logging.DEBUG)
 
 def conectar_banco():
     try:
-        # Estabelece a conexão com o banco de dados PostgreSQL
-        conn = psycopg2.connect(
-            dbname=DB_CONFIG['dbname'],
-            user=DB_CONFIG['user'],
-            password=DB_CONFIG['password'],
-            host=DB_CONFIG['host'],
-            port=DB_CONFIG['port']
-        )
-        logging.info("Conexão bem-sucedida com o banco de dados.")
-        return conn
+        return psycopg2.connect(**DB_CONFIG)
     except Exception as e:
         logging.error(f"Erro ao conectar ao banco de dados: {e}")
         return None
 
 def buscar_erro(user_input):
-    # Conectar ao banco
     conn = conectar_banco()
-    if conn is None:
+    if not conn:
         return {"error": "Erro ao conectar ao banco de dados"}
-
     try:
         cur = conn.cursor()
-
-        # Exemplo de uma consulta SQL simples com o `user_input`
-        query = sql.SQL("SELECT id, titulo, conteudo FROM artigos WHERE titulo LIKE %s OR conteudo LIKE %s LIMIT 3")
-        cur.execute(query, (f"%{user_input}%", f"%{user_input}%"))
-        
+        # 2.1) Full-text search com ranking
+        ts_query = sql.SQL("plainto_tsquery('portuguese', %s)")
+        query = sql.SQL("""
+            SELECT id, titulo, conteudo
+            FROM artigos
+            WHERE texto_vetor @@ {tsq}
+            ORDER BY ts_rank_cd(texto_vetor, {tsq}) DESC
+        """).format(tsq=ts_query)
+        cur.execute(query, (user_input, user_input))
         artigos = cur.fetchall()
+
+        # 2.2) Fallback para ILIKE caso não ache nada em full-text
+        if not artigos:
+            pattern = f"%{user_input}%"
+            cur.execute("""
+                SELECT id, titulo, conteudo
+                FROM artigos
+                WHERE titulo ILIKE %s OR conteudo ILIKE %s
+            """, (pattern, pattern))
+            artigos = cur.fetchall()
+
         cur.close()
         conn.close()
 
-        if artigos:
-            # Formatar os resultados como uma lista de dicionários
-            artigos_list = []
-            for artigo in artigos:
-                # Forçar a decodificação do conteúdo se necessário
-                titulo = artigo[1].decode('utf-8', 'ignore') if isinstance(artigo[1], bytes) else artigo[1]
-                conteudo = artigo[2].decode('utf-8', 'ignore') if isinstance(artigo[2], bytes) else artigo[2]
-                
-                artigos_list.append({
-                    'id': artigo[0],
-                    'titulo': titulo,
-                    'conteudo': conteudo
-                })
-            return {"resultados": artigos_list}
-        else:
+        if not artigos:
             return {"resultados": [], "message": "Nenhum dado encontrado para a sua pergunta."}
-    
+
+        resultados = []
+        for art in artigos:
+            titulo   = art[1].decode('utf-8','ignore') if isinstance(art[1], bytes) else art[1]
+            conteudo = art[2].decode('utf-8','ignore') if isinstance(art[2], bytes) else art[2]
+            resultados.append({
+                'id': art[0],
+                'titulo': titulo,
+                'conteudo': conteudo
+            })
+        return {"resultados": resultados}
+
     except Exception as e:
         logging.error(f"Erro na consulta SQL: {e}")
         return {"error": "Erro ao realizar a consulta no banco de dados."}

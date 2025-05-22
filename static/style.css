@@ -40,3 +40,8 @@ body {
     margin-right: auto;
     text-align: left;
 }
+
+.bot-msg, .user-msg {
+  white-space: pre-wrap;    /* preserva \n e múltiplos espaços */
+  margin-bottom: 1rem;      /* espaçamento entre mensagens */
+}

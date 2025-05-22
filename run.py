@@ -1,7 +1,15 @@
-from flask import Flask, render_template, request, jsonify
-from app.db import buscar_erro  # Função para buscar erros no banco de dados
+# run.py
 
-app = Flask(__name__)
+from flask import Flask, render_template, request, jsonify, send_from_directory
+import os
+from app.cohere_chatbot import gerar_resposta_cohere
+
+app = Flask(__name__, static_folder='static', static_url_path='/static')
+
+@app.route('/ckeditor_assets/<path:filename>')
+def ckeditor_static(filename):
+    root = os.path.join(app.root_path, 'ckeditor_assets')
+    return send_from_directory(root, filename)
 
 @app.route('/')
 def index():
@@ -9,29 +17,16 @@ def index():
 
 @app.route('/chat', methods=['POST'])
 def chat():
-    try:
-        # Captura a pergunta do usuário a partir do JSON enviado pela requisição
-        user_input = request.json['pergunta']  # Pergunta enviada pelo frontend
-        
-        # Busca os erros relacionados no banco de dados
-        resposta = buscar_erro(user_input)
-        
-        # Verifica se houve erro ao buscar no banco
-        if 'error' in resposta:
-            return jsonify({'response': resposta['error']}), 500
-        
-        # Se os resultados estiverem presentes, retorna como resposta
-        if 'resultados' in resposta:
-            return jsonify({'response': resposta['resultados']})
-        
-        # Caso não haja resultados, retorna uma mensagem padrão
-        return jsonify({'response': resposta.get('message', 'Desculpe, não encontramos uma resposta.')})
-    
-    except Exception as e:
-        # Em caso de erro inesperado
-        print(f"Erro ao processar a requisição: {e}")
-        return jsonify({'response': 'Desculpe, ocorreu um erro interno.'}), 500
+    pergunta = request.json.get('pergunta', '').strip()
+    if not pergunta:
+        return jsonify({'response': 'Por favor, envie uma pergunta válida.'}), 400
 
+    try:
+        resposta = gerar_resposta_cohere(pergunta)
+        return jsonify({'response': resposta})
+    except Exception as e:
+        app.logger.exception("Erro no endpoint /chat")
+        return jsonify({'response': 'Desculpe, ocorreu um erro interno.'}), 500
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0")
