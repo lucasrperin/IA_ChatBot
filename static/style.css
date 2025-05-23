@@ -13,35 +13,34 @@ body {
 }
 
 .chat-box {
-    height: 700px;
+    display: flex;
+    flex-direction: column;
+    height: 600px;
     max-height: 80%;
     overflow-y: auto;
     background-color: #f1f1f1;
     padding: 15px;
 }
 
-.user-msg, .bot-msg {
-    margin-bottom: 10px;
-    padding: 10px 15px;
-    border-radius: 10px;
-    max-width: 90%;
-    clear: both;
-}
 
 .user-msg {
     background-color: #d1e7dd;
     align-self: flex-end;
-    margin-left: auto;
-    text-align: right;
+ 
 }
 
 .bot-msg {
-    background-color: #e2e3e5;
-    margin-right: auto;
-    text-align: left;
+  background-color: #e2e3e5;   /* seu tom de cinza */
+  align-self: flex-start;      /* fica do lado esquerdo */
 }
 
 .bot-msg, .user-msg {
   white-space: pre-wrap;    /* preserva \n e múltiplos espaços */
-  margin-bottom: 1rem;      /* espaçamento entre mensagens */
+  margin-bottom: 0.5rem;      /* espaçamento entre mensagens */
+  display: inline-block;       /* ajusta largura ao conteúdo */
+  max-width: 80%;              /* evita esticar demais em telas grandes */
+  padding: 0.75rem 1rem;       /* espaçamento interno */
+  border-radius: 0.5rem;       /* cantos arredondados */
+  word-break: break-word;      /* quebra linhas longas */
 }
+

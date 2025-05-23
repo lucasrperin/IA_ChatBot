@@ -45,68 +45,70 @@
     </div>
 
       <script>
-        const form = document.getElementById("chatForm");
-        const input = document.getElementById("userText");
-        const chatBox = document.getElementById("chat-box");
+  const form     = document.getElementById("chatForm");
+  const input    = document.getElementById("userText");
+  const chatBox  = document.getElementById("chat-box");
+  const sendBtn  = document.getElementById("sendBtn");
 
-        form.addEventListener("submit", async function(e) {
-            e.preventDefault();
-            const userText  = input.value.trim();
-            if (!userText) return;
+  form.addEventListener("submit", async function(e) {
+    e.preventDefault();
+    const userText = input.value.trim();
+    if (!userText) return;
 
-            // lê aqui se o usuário marcou “Buscar na BDC”
-            const buscarBdc = document.getElementById("buscarBDC").checked;
+    // 1) renderiza a mensagem do usuário
+    chatBox.innerHTML += `<div class="user-msg"><strong>Você:</strong><br>${userText}</div>`;
+    input.value = "";
 
-            // renderiza a mensagem do usuário...
-            chatBox.innerHTML += `<div class="user-msg"><strong>Você:</strong><br>${userText}</div>`;
-            input.value = "";
+    // 2) exibe spinner de loading
+    const loadingElem = document.createElement("div");
+    loadingElem.setAttribute("id", "loading");
+    loadingElem.className = "bot-msg text-center";
+    loadingElem.innerHTML = `<div class="spinner-border text-primary" role="status"></div>`;
+    chatBox.appendChild(loadingElem);
+    chatBox.scrollTop = chatBox.scrollHeight;
 
-            // envia ao back, incluindo o flag buscarBDC
-            const res = await fetch("/chat", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                pergunta:  userText,
-                buscarBDC: buscarBdc
-            })
-            });
-            const data = await res.json();
+    // 3) faz a chamada ao back-end
+    const res = await fetch("/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        pergunta:  userText,
+        buscarBDC: document.getElementById("buscarBDC").checked
+      })
+    });
+    const data = await res.json();
 
-            // IA
-            if (Array.isArray(data.response)) {
-                data.response.forEach(item => {
-                    let html = `<div class="bot-msg"><strong>IA:</strong><br>`;
+    // 4) remove o spinner assim que chegar a resposta
+    document.getElementById("loading")?.remove();
 
-                    if (item.imagem) {
-                        html += `<img src="${item.imagem}" alt="imagem IA" style="max-width:100%;margin:0.5rem 0;">`;
-                    }
-                    if (item.titulo) {
-                        html += `<div><em>${item.titulo}</em></div>`;
-                    }
-                    if (item.conteudo) {
-                        html += `
-                          <div style="white-space: pre-wrap; margin-top:0.5rem;">
-                            ${item.conteudo}
-                          </div>
-                        `;
-                    }
-                    html += `</div>`;
-                    chatBox.innerHTML += html;
-                });
-            } else {
-                chatBox.innerHTML += `
-                  <div class="bot-msg">
-                    <strong>IA:</strong>
-                    <div style="white-space: pre-wrap; margin-top:0.5rem;">
-                      ${data.response}
-                    </div>
-                  </div>
-                `;
-            }
+    // 5) renderiza a resposta da IA
+    if (Array.isArray(data.response)) {
+      data.response.forEach(item => {
+        let html = `<div class="bot-msg text-start"><strong class="d-block">IA:</strong></div>`;
+        if (item.imagem) {
+          html += `<img src="${item.imagem}" alt="imagem IA" style="max-width:100%;margin:0.5rem 0;">`;
+        }
+        if (item.titulo) {
+          html += `<div><em>${item.titulo}</em></div>`;
+        }
+        if (item.conteudo) {
+          html += `
+            <div style="white-space: pre-wrap;">
+              ${item.conteudo}
+            </div>
+          `;
+        }
+        html += `</div>`;
+        chatBox.innerHTML += html;
+      });
+    } else {
+      chatBox.innerHTML += `<div class="bot-msg text-start"><strong class="d-block mt-0">IA:</strong><div style="white-space: pre-wrap;">${data.response.trim()}</div></div>`;
+    }
 
-            chatBox.scrollTop = chatBox.scrollHeight;
-        });
-    </script>
+    chatBox.scrollTop = chatBox.scrollHeight;
+  });
+</script>
+
 
 </body>
 </html>
